@@ -1,0 +1,184 @@
+10 rem Written by Helena Huang
+11 rem October 20, 2013
+12 rem Used variables: grid, wl
+13 rem N.B. to the user: go to line 4000 to input your own words
+
+15 rem Setting the seed for random number generator
+16 sd = ti
+
+20 rem Create a grid dimensioned mxm and fill with dots
+30 input "How long would you like the edges of the grid to be, oh my Master";m
+40 dim grid$(m,m)
+50 for i=1 to m : for j=1 to m
+60 grid$(i,j) = "."
+70 next j : next i
+
+80 rem Read the words into an array
+90 read n
+100 dim wl$(n)
+110 for i=1 to n
+120 read wl$(i)
+130 next i
+
+134 rem Creating an array to store words that didn't fit anywhere
+135 dim nf$(n)
+136 ni = 1
+
+140 rem Reading the first word in
+150 if rnd(sd) < .5 then hv = 1 : rem Setting orientation
+160 wd$ = wl$(1)
+166 gosub 2600 : rem TOO LONG
+167 if tl=1 then goto 180
+170 gosub 2400 : rem Go to subroutine RANDOM EMPTY
+
+180 rem Now on to the rest of the words!
+190 for wn=2 to n
+200 gosub 2010 : rem FLIP ORIENTATION
+210 wd$ = wl$(wn)
+211 rem print : rem DEBUG
+215 rem print wd$ : rem DEBUG
+216 gosub 2600 : rem TOO LONG
+217 if tl=1 then goto 230
+220 gosub 2040 : rem subroutine FORCE FIT
+230 rem gosub 3460 : rem DEBUG print grid
+235 rem print
+240 next wn
+
+400 rem Printing words that didn't fit into the grid
+405 print
+410 print "Words that didn't fit:"
+420 for i=1 to ni-1
+425 print i;
+426 print "- ";
+430 print nf$(i)
+440 next i
+
+460 rem Printing the grid
+465 print
+470 for i=1 to m : for j=1 to m
+480 print grid$(i,j);
+490 next j
+500 print
+510 next i
+
+
+
+1999 end
+2000 rem SUBROUTINES
+
+2010 rem FLIP ORIENTATION
+2020 if hv = 1 then goto 2030
+2025 hv = 1
+2027 goto 2035
+2030 hv = 0
+2035 return
+
+2040 rem FORCE FIT (set wd before)
+2045 rem print "FORCE FIT" : rem DEBUG
+2047 gosub 2600 : rem TOO LONG
+2048 if tl=1 then goto 2105
+2049 ft=0
+2050 for i=1 to m : for j=1 to m
+2060 for k=1 to len(wd$)
+2070 lt$ = mid$(wd$,k,1)
+2080 if lt$=grid$(i,j) then gosub 2110 : rem CHECK EMPTIES
+2090 if ft=1 then gosub 2250 : rem PLUG IN
+2095 if ft=1 then goto 2105 : rem Breaks out of for loop after first success
+2098 next k
+2100 next j : next i
+2102 rem print "No force fit found" : rem DEBUG
+2103 gosub 2400 : rem Because force fitting didn't work, try random empties
+2105 return
+
+2110 rem CHECK EMPTIES attempt #3
+2115 rem print "CHECK EMPTIES 3" : rem DEBUG
+2120 ft=1: rem ft(fit)= 0 if it doesn't it, =1 if it does
+2121 sb$ = left$(wd$,k-1)
+2123 if hv = 0 then goto 2165
+2124 rem Checking horizontally
+2126 fi = j-len(sb$)
+2129 if fi<1 then goto 2230
+2130 if fi+len(wd$)-1>m then goto 2230
+2131 for li=1 to len(wd$)
+2135 if j-len(sb$)<0 then goto 2230
+2150 if grid$(i,fi+li-1)="." then goto 2155
+2151 if grid$(i,fi+li-1)=mid$(wd$,li,1) then goto 2155
+2152 goto 2230
+2155 next li
+2160 goto 2240
+2165 rem Checking vertically
+2170 fi = i-len(sb$)
+2175 if fi<1 then goto 2230
+2180 if fi+len(wd$)-1>m then goto 2230
+2185 for li=1 to len(wd$)
+2190 rem if i-len(sb$)<0 then goto 2230
+2195 if grid$(fi+li-1, j)="." then goto 2220
+2200 if grid$(fi+li-1, j)=mid$(wd$,li,1) then goto 2220
+2210 goto 2230
+2220 next li
+2225 goto 2240
+2230 ft = 0 : rem word cannot fit
+2235 rem gosub 2550 : rem NO FIT
+2240 rem print "End of CE3: ft is";
+2241 rem print ft : rem DEBUG, move the next line up when you remove this
+2242 return
+
+2250 rem PLUG IN
+2255 rem print "PLUG IN" : rem DEBUG
+2260 sb$ = left$(wd$,k)
+2270 for c1=1 to len(wd$)
+2275 if hv = 0 then goto 2290
+2280 grid$(i,j-len(sb$)+c1)=mid$(wd$,c1,1)
+2285 goto 2300
+2290 grid$(i-len(sb$)+c1,j)=mid$(wd$,c1,1)
+2300 next c1
+2310 return
+
+2400 rem RANDOM EMPTY attempt #4 =.="
+2410 rem Finding all big enough empty spaces (set wd before the subroutine)
+2420 rem create an array to hold possibilities of starts
+2425 rem 1 means can fit starting there
+2429 rem print "RANDOM EMPTY" : rem DEBUG
+2430 for tr=1 to 10
+2440 j = rnd(sd)*(m-len(wd$))
+2450 i = rnd(sd)*(m-len(wd$))
+2455 if grid$(i,j)<>"." then goto 2480
+2457 k=1
+2460 gosub 2110 : rem subroutine CHECK EMPTIES
+2470 if ft=0 then goto 2480
+2472 gosub 2250 : rem PLUG IN
+2474 goto 2530
+2480 next tr
+2520 gosub 2550
+2530 return
+
+2550 rem NO FIT
+2560 rem Places a word which didn't fit into the grid into array nf$(n)
+2561 rem print "NO FIT" : rem DEBUG
+2570 nf$(ni) = wd$
+2580 ni = ni+1
+2585 rem nf = 1
+2590 return
+
+2600 rem TOO LONG
+2601 rem print "in TOO LONG" : rem DEBUG
+2605 tl=0
+2607 if len(wd$)<=m then goto 2650
+2610 gosub 2550
+2630 tl=1
+2640 rem print "TOO LONGGG" : rem DEBUG
+2650 return 
+
+3460 rem Printing the grid
+3471 for i=1 to m : for j=1 to m
+3480 print grid$(i,j);
+3490 next j
+3500 print
+3510 next i
+3520 return
+
+4000 rem DATA
+4010 rem Number of words (n) and the words
+4020 data 10, "one", "two", "three", "cat", "hat", "bone", "work", "zzzz"
+4021 data "thiswordisprobablytoolongforthegrid"
+4022 data "hippopotomonstrosesquippedaliophobia"
